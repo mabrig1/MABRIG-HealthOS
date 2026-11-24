@@ -15,6 +15,27 @@
   "main": "worker/index.mjs",
   "vars": {
     "EVIDENCE_ENABLED": "false",
-    "SWARM_COUNCIL_ENABLED": "false"
-  }
+    "SWARM_COUNCIL_ENABLED": "false",
+    "HEALTH_AI_ENABLED": "false",
+    "CF_AI_FREE_PLAN_CONFIRMED": "false"
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "HEALTH_AI_QUOTA",
+        "class_name": "HealthAIQuota"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "health-ai-v1",
+      "new_sqlite_classes": [
+        "HealthAIQuota"
+      ]
+    }
+  ]
 }

@@ -1,4 +1,4 @@
-# MABRIG HealthOS v0.9
+# MABRIG HealthOS v0.10
 Independent fictional health-evidence research application by MABRIG Technologies.
 
 ## Run
@@ -33,3 +33,6 @@ Optional server-to-server fixed-mission gateway. Eight deterministic planning ro
 
 ## Scientific computing
 Actual local synthetic MONAI training and holdout benchmark, arithmetic-checked report import, and separate HAPI FHIR base validation harness. [Guide](clinical/COMPUTE.md). No production deployment or medical accuracy claims.
+
+## Workers AI owner research pilot
+See [activation guide](docs/WORKERS-AI.md). Disabled by default; fixed-topic, owner-authorized, quota-bounded drafts. No medical use or automatic paid fallback.
