@@ -5,7 +5,7 @@ function drawMap(){clear('map');const f=fixture(),NS='http://www.w3.org/2000/svg
 function runSwarm(){agentResults=compileEvidence(current,[...closed],true).agents;clear('agents');for(const a of agentResults){const e=elem('article',undefined,'agent');add(e,elem('span','SCRIPTED COMPLETE','tag done'),elem('h3',a.id+'. '+a.role),elem('p',a.output));$('agents').append(e)}$('swarm-status').textContent='12 scripted roles completed · 0 AI calls · not clinically validated.'}
 function renderVisit(){const q=prepareVisit(report());clear('visit-questions');if(!q.length){$('visit-questions').append(elem('p','All fictional actions are reported complete; this is not clinical clearance.'));return}for(const x of q)$('visit-questions').append(item(x.question,x.reviewer,'Source '+x.source))}
 function reset(){current=$('case').value;closed=new Set();agentResults=[];clear('agents');$('swarm-status').textContent='Ready for demonstration.';render()}
-$('case').addEventListener('change',reset);$('reset').addEventListener('click',reset);$('compile').addEventListener('click',()=>{render();runSwarm()});$('run-swarm').addEventListener('click',runSwarm);$('export').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(report(),null,2)],{type:'application/json'}));const a=elem('a');a.href=url;a.download='healthos-fictional-evidence.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});const headings={overview:'Your health story, connected.',timeline:'Health timeline',evidence:'Evidence intelligence',actions:'Close the documentation loop.',swarm:'Specialist evidence swarm',privacy:'Privacy by design',visit:'Prepare for a care visit',library:'Health evidence library',ecosystem:'MABRIG connected workspace',research:'Public research radar',imaging:'MONAI imaging research lab'};for(const b of document.querySelectorAll('[data-view]'))b.addEventListener('click',()=>{for(const v of document.querySelectorAll('.view'))v.hidden=v.id!==b.dataset.view;for(const x of document.querySelectorAll('[data-view]')){x.classList.toggle('active',x===b);x.setAttribute('aria-current',x===b?'page':'false')}$('heading').textContent=headings[b.dataset.view]});
+$('case').addEventListener('change',reset);$('reset').addEventListener('click',reset);$('compile').addEventListener('click',()=>{render();runSwarm()});$('run-swarm').addEventListener('click',runSwarm);$('export').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(report(),null,2)],{type:'application/json'}));const a=elem('a');a.href=url;a.download='healthos-fictional-evidence.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});const headings={overview:'Your health story, connected.',timeline:'Health timeline',evidence:'Evidence intelligence',actions:'Close the documentation loop.',swarm:'Specialist evidence swarm',privacy:'Privacy by design',visit:'Prepare for a care visit',library:'Health evidence library',ecosystem:'MABRIG connected workspace',research:'Public research radar',imaging:'MONAI imaging research lab',studio:'Medical imaging studio'};for(const b of document.querySelectorAll('[data-view]'))b.addEventListener('click',()=>{for(const v of document.querySelectorAll('.view'))v.hidden=v.id!==b.dataset.view;for(const x of document.querySelectorAll('[data-view]')){x.classList.toggle('active',x===b);x.setAttribute('aria-current',x===b?'page':'false')}$('heading').textContent=headings[b.dataset.view]});
 
 let pendingHandoff=null;
 function clearHandoff(){pendingHandoff=null;$('handoff-preview').hidden=true;$('handoff-text').textContent='';$('handoff-status').textContent='';}
@@ -59,3 +59,39 @@ $('imaging-file').addEventListener('change',async()=>{
  catch{if(seq===imagingSequence){clearImaging();$('imaging-status').textContent='Report rejected. Use only the generated synthetic lab JSON; no patient images or medical records.'}}
  finally{if(seq===imagingSequence)$('imaging-file').value=''}
 });
+
+// Geometry-only phantom. No patient data, models or external data sources.
+const PHANTOM_SIZE=48;
+function phantomVoxel(x,y,z){
+ for(const v of [x,y,z])if(!Number.isInteger(v)||v<0||v>=PHANTOM_SIZE)throw Error('invalid voxel');
+ const a=(x-24)/17,b=(y-24)/14,c=(z-24)/19;
+ const outer=a*a+b*b+c*c<=1;
+ const inner=((x-18)/6)**2+((y-24)/5)**2+((z-24)/8)**2<=1;
+ const second=((x-30)/5)**2+((y-28)/4)**2+((z-28)/7)**2<=1;
+ return inner?{value:220,label:2}:second?{value:155,label:3}:outer?{value:90,label:1}:{value:12,label:0};
+}
+function phantomSlice(plane,index,level=128,width=256,overlay=false){
+ if(!['axial','coronal','sagittal'].includes(plane)||!Number.isInteger(index)||index<0||index>=PHANTOM_SIZE||!Number.isFinite(level)||level<0||level>255||!Number.isFinite(width)||width<1||width>512||typeof overlay!=='boolean')throw Error('invalid view');
+ const rgba=new Uint8ClampedArray(PHANTOM_SIZE*PHANTOM_SIZE*4);
+ for(let y=0;y<PHANTOM_SIZE;y++)for(let x=0;x<PHANTOM_SIZE;x++){
+  const [a,b,c]=plane==='axial'?[x,y,index]:plane==='coronal'?[x,index,y]:[index,x,y];
+  const v=phantomVoxel(a,b,c),g=Math.round(255*Math.max(0,Math.min(1,(v.value-level+width/2)/width))),i=4*(y*PHANTOM_SIZE+x);
+  const color=overlay&&v.label===2?[255,116,40]:overlay&&v.label===3?[45,205,175]:[g,g,g];
+  rgba.set([...color,255],i);
+ }
+ return rgba;
+}
+function phantomSummary(){const counts=[0,0,0,0];for(let z=0;z<PHANTOM_SIZE;z++)for(let y=0;y<PHANTOM_SIZE;y++)for(let x=0;x<PHANTOM_SIZE;x++)counts[phantomVoxel(x,y,z).label]++;
+ return {schema:'healthos-geometric-phantom-v1',synthetic_only:true,clinical_validation:false,dimensions:[48,48,48],voxel_spacing_mm:[1,1,1],labels:counts.map((count,label)=>({label,voxel_count:count,synthetic_volume_mm3:count})),notice:'Analytic geometric phantom only; volumes are not anatomical measurements.'};}
+
+const studioPlanes=['axial','coronal','sagittal'];
+function renderStudio(){
+ const level=Number($('studio-level').value),width=Number($('studio-width').value),overlay=$('studio-overlay').checked;
+ $('studio-level-value').textContent=String(level);$('studio-width-value').textContent=String(width);
+ for(const plane of studioPlanes){const i=Number($('studio-'+plane+'-slice').value),canvas=$('studio-'+plane),ctx=canvas.getContext('2d');$('studio-'+plane+'-value').textContent=String(i);if(ctx){const img=ctx.createImageData(48,48);img.data.set(phantomSlice(plane,i,level,width,overlay));ctx.putImageData(img,0,0);}}
+}
+for(const id of ['studio-level','studio-width','studio-overlay',...studioPlanes.map(p=>'studio-'+p+'-slice')])$(id).addEventListener('input',renderStudio);
+$('studio-reset').addEventListener('click',()=>{$('studio-level').value=128;$('studio-width').value=256;$('studio-overlay').checked=true;for(const p of studioPlanes)$('studio-'+p+'-slice').value=24;renderStudio()});
+$('studio-export').addEventListener('click',()=>{const a=elem('a'),url=URL.createObjectURL(new Blob([JSON.stringify(phantomSummary(),null,2)],{type:'application/json'}));a.href=url;a.download='healthos-synthetic-geometry.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+for(const l of phantomSummary().labels.slice(1))$('studio-summary').append(item('Geometry label '+l.label,l.voxel_count+' voxels',l.synthetic_volume_mm3+' mm³ at synthetic 1 mm spacing'));
+renderStudio();

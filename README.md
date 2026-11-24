@@ -1,4 +1,4 @@
-# MABRIG HealthOS v0.5
+# MABRIG HealthOS v0.6
 Independent fictional health-evidence research application by MABRIG Technologies.
 
 ## Run
@@ -21,3 +21,6 @@ Europe PMC metadata retrieval with four fixed topics, ten records per request, t
 
 ## MONAI imaging lab
 Pinned upstream source submodule and separate local CPU synthetic imaging runtime. See [setup and limitations](imaging/README.md). Browser imports a bounded synthetic report and independently checks mask overlap. No patient images, trained diagnostic model, hosted Python runtime or clinical validation.
+
+## Imaging studio and OHIF
+Native offline geometric volume viewer with three planes, window controls, overlays and synthetic volume export. OHIF source pinned separately; local synthetic DICOM generation and optional local viewer build instructions in [imaging/OHIF.md](imaging/OHIF.md). No embedded OHIF or real patient scan support. No production or clinical deployment.
