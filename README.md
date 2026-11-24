@@ -1,4 +1,4 @@
-# MABRIG HealthOS v0.7
+# MABRIG HealthOS v0.8
 Independent fictional health-evidence research application by MABRIG Technologies.
 
 ## Run
@@ -27,3 +27,6 @@ Native offline geometric volume viewer with three planes, window controls, overl
 
 ## Clinical Research OS
 Synthetic cohorts, FHIR R4-style collection exports, StatLab CSV, internal reference checks and manual geometry marks. Six new source submodules; no upstream runtimes enabled. [Guide](clinical/README.md).
+
+## Protected SwarmLab research council
+Optional server-to-server fixed-mission gateway. Eight deterministic planning roles, no inference or clinical results. See [operator setup](docs/SWARMLAB-COUNCIL.md). Disabled until both Workers are configured.

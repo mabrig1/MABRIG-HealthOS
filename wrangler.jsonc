@@ -14,6 +14,7 @@
   },
   "main": "worker/index.mjs",
   "vars": {
-    "EVIDENCE_ENABLED": "false"
+    "EVIDENCE_ENABLED": "false",
+    "SWARM_COUNCIL_ENABLED": "false"
   }
 }

@@ -1,3 +1,4 @@
+import {councilGateway} from './council.mjs';
 // Fixed-topic publication metadata gateway. No patient text, AI inference or medical advice.
 const TOPICS=Object.freeze({
  care:'"care coordination" AND "health records"',
@@ -30,7 +31,8 @@ export async function searchEvidence(topic,fetcher=globalThis.fetch){
 }
 export async function handle(request,env,fetcher=globalThis.fetch,cache=undefined){
  const u=new URL(request.url);
- if(u.pathname==='/api/health')return request.method==='GET'?json(200,{service:'healthos',evidence:env.EVIDENCE_ENABLED==='true',clinicalUse:false}):json(405,{error:'Method not allowed'});
+ if(u.pathname==='/api/council')return councilGateway(request,env);
+ if(u.pathname==='/api/health')return request.method==='GET'?json(200,{service:'healthos',evidence:env.EVIDENCE_ENABLED==='true',council:env.SWARM_COUNCIL_ENABLED==='true'&&!!env.SWARMLAB&&typeof env.HEALTHOS_BRIDGE_TOKEN==='string'&&env.HEALTHOS_BRIDGE_TOKEN.length>=32,clinicalUse:false}):json(405,{error:'Method not allowed'});
  if(u.pathname!=='/api/evidence'){
   if(u.pathname.startsWith('/api/'))return json(404,{error:'Not found'});
   return env.ASSETS.fetch(request);
