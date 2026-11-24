@@ -212,7 +212,7 @@ function captureFeedback(frames){
 let wellnessStream=null,wellnessGeneration=0,wellnessTimers=[];
 const habitKeys=['sun','dryness','food','movement','sleep','smoking','faceExercise'];
 function wellnessStop(message='Camera off. No images retained.'){
- wellnessGeneration++;for(const t of wellnessTimers)clearTimeout(t);wellnessTimers=[];
+ wellnessGeneration++;landmarkReset();for(const t of wellnessTimers)clearTimeout(t);wellnessTimers=[];
  if(wellnessStream)for(const t of wellnessStream.getTracks())t.stop();
  wellnessStream=null;$('wellness-video').srcObject=null;$('wellness-start').disabled=false;$('wellness-scan').disabled=true;
  $('wellness-status').textContent=message;clear('wellness-feedback');
@@ -229,7 +229,7 @@ $('wellness-start').addEventListener('click',async()=>{
  if(run!==wellnessGeneration||document.hidden||$('wellness').hidden||!$('wellness-consent').checked){stream.getTracks().forEach(t=>t.stop());return}
  wellnessStream=stream;$('wellness-video').srcObject=stream;await $('wellness-video').play();
  if(run!==wellnessGeneration)return;
- $('wellness-scan').disabled=false;$('wellness-status').textContent='Camera on. Center your face and begin the guided check.';
+ $('wellness-scan').disabled=false;$('landmark-scan').disabled=!landmarkModel;$('wellness-status').textContent='Camera on. Center your face and begin the guided check.';
  }catch{if(run===wellnessGeneration)wellnessStop('Camera permission denied or unavailable. The habit plan still works.')}
 });
 $('wellness-stop').addEventListener('click',()=>wellnessStop());
@@ -242,9 +242,105 @@ function wellnessSample(){
 $('wellness-scan').addEventListener('click',()=>{
  if(!wellnessStream||!$('wellness-consent').checked)return;
  const run=wellnessGeneration;let first;
- $('wellness-scan').disabled=true;clear('wellness-feedback');$('wellness-status').textContent='Keep still in even light. First check in 4 seconds.';
+ $('wellness-scan').disabled=true;$('landmark-scan').disabled=true;clear('wellness-feedback');$('wellness-status').textContent='Keep still in even light. First check in 4 seconds.';
  wellnessTimers.push(setTimeout(()=>{if(run!==wellnessGeneration)return;try{first=wellnessSample();$('wellness-status').textContent='First sample checked. Stay neutral for 4 more seconds.'}catch{wellnessStop('Could not sample camera. Retake or use the plan.')}},4000));
  wellnessTimers.push(setTimeout(()=>{if(run!==wellnessGeneration)return;try{const result=captureFeedback([first,wellnessSample()]);wellnessStop('Guided check finished. Camera stopped; no image saved.');$('wellness-feedback').append(item(result.ready?'Image-quality check passed':'Capture could be improved',result.ready?'Lighting and image detail passed experimental checks. This does not assess skin health.':result.tips.join(' '),result.notice));}catch{wellnessStop('Camera check could not finish. Retake or use the plan.')}},8000));
 });
 $('wellness-plan').addEventListener('click',()=>{clear('wellness-plan-output');const plan=wellnessPlan(Object.fromEntries(habitKeys.map(k=>[k,$('habit-'+k).checked])));for(const p of plan){const c=elem('article',undefined,'agent'),a=elem('a','Read evidence ↗');a.href=p.source;a.target='_blank';a.rel='noopener noreferrer';add(c,elem('h3',p.title),elem('p',p.body),elem('span',p.level,'tag'),elem('p'));c.lastChild.append(a);$('wellness-plan-output').append(c)}});
 $('wellness-clear').addEventListener('click',()=>{wellnessStop();$('wellness-consent').checked=false;for(const k of habitKeys)$('habit-'+k).checked=false;clear('wellness-plan-output')});
+
+// Educational program: self-selected regions, not inferred from camera imagery.
+const longevityRegions=Object.freeze({
+ forehead:['Forehead','Expression lines and changes in surface texture can occur here. Protect exposed skin from UV and avoid harsh products. A dermatologist can explain options if lines bother you.'],
+ eyes:['Eye area','The eye area is delicate. Use comfortable sun protection and gentle skin care. Do not put irritating actives near the eyelids without professional guidance.'],
+ cheeks:['Cheeks','Uneven tone, dryness and changes in facial fullness have different causes. Use gentle care and sun protection; a clinician can assess persistent pigment concerns.'],
+ mouth:['Mouth and smile lines','Normal facial movement and changes in underlying support can affect folds. No exercise is proven to restore lost facial volume.'],
+ jaw:['Jawline and neck','Skin and deeper tissues change with age. Protect exposed neck skin, and seek professional advice about cosmetic options; exercises cannot reliably lift tissues.']
+});
+const longevityHabits=Object.freeze(['am','pm','plants','movement','rest']);
+const longevityLabels=Object.freeze({am:'Morning sun protection',pm:'Gentle evening skin care',plants:'Varied plant foods and protein',movement:'Movement or planned recovery',rest:'Consistent sleep and relaxation routine'});
+function longevityRoutine(kind){
+ if(!['normal','dry','oily'].includes(kind))throw Error('invalid skin preference');
+ const details={normal:'Choose a comfortable gentle cleanser and moisturizer.',dry:'Prefer fragrance-free gentle cleansing and a richer moisturizer; avoid irritating exfoliants.',oily:'Choose gentle cleansing and a light, non-comedogenic moisturizer; avoid harsh scrubbing.'};
+ return {am:[details[kind],'Finish with broad-spectrum, water-resistant SPF 30+; reapply as directed when outdoors.'],pm:['Remove sunscreen and makeup gently.',details[kind],'Ask a dermatologist about retinoids or other actives if interested. Avoid retinoids during pregnancy; discuss breastfeeding, sensitive skin and current treatments with a clinician.']};
+}
+function newLongevityLog(){return {schema:'healthos-habits-v1',days:Array.from({length:30},()=>Object.fromEntries(longevityHabits.map(k=>[k,false])))}}
+function checkLongevityLog(x){
+ if(!x||Object.keys(x).length!==2||x.schema!=='healthos-habits-v1'||!Array.isArray(x.days)||x.days.length!==30||x.days.some(d=>!d||Object.keys(d).length!==5||longevityHabits.some(k=>typeof d[k]!=='boolean')))throw Error('Invalid journal');
+ return {schema:x.schema,days:x.days.map(d=>Object.fromEntries(longevityHabits.map(k=>[k,d[k]])))};
+}
+function longevityCounts(x){const d=checkLongevityLog(x).days;return {completed:d.reduce((n,r)=>n+longevityHabits.filter(k=>r[k]).length,0),total:150,days:d.filter(r=>longevityHabits.every(k=>r[k])).length}}
+
+let longevityLog=newLongevityLog(),longevityDay=0,longevityImportSeq=0;
+function renderLongevityRegion(){const r=longevityRegions[$('longevity-region').value];if(!r)return;clear('longevity-region-info');$('longevity-region-info').append(item(r[0],r[1],'Education only · self-selected area'))}
+function renderLongevityRoutine(){clear('longevity-routine');const r=longevityRoutine($('longevity-skin').value);for(const [title,lines] of [['Morning',r.am],['Evening',r.pm]]){const a=elem('article',undefined,'agent');a.append(elem('h3',title));const ol=elem('ol');for(const l of lines)ol.append(elem('li',l));a.append(ol);$('longevity-routine').append(a)}}
+function renderLongevity(){clear('longevity-day-grid');for(let i=0;i<30;i++){const b=elem('button',String(i+1),i===longevityDay?'primary':'');b.setAttribute('aria-pressed',i===longevityDay?'true':'false');if(longevityHabits.every(k=>longevityLog.days[i][k]))b.classList.add('habit-complete');b.setAttribute('aria-label','Day '+(i+1));b.addEventListener('click',()=>{longevityDay=i;renderLongevity()});$('longevity-day-grid').append(b)}$('longevity-day-title').textContent='Day '+(longevityDay+1);clear('longevity-checks');for(const k of longevityHabits){const label=elem('label',undefined,'wellness-check'),c=elem('input');c.type='checkbox';c.checked=longevityLog.days[longevityDay][k];c.addEventListener('change',()=>{longevityLog.days[longevityDay][k]=c.checked;const n=longevityCounts(longevityLog);$('longevity-tally').textContent=n.completed+' of '+n.total+' habit checks · '+n.days+' complete days · not a health score';$('longevity-bar').style.width=(100*n.completed/n.total)+'%';$('longevity-day-grid').children[longevityDay].classList.toggle('habit-complete',longevityHabits.every(k=>longevityLog.days[longevityDay][k]))});label.append(c,document.createTextNode(longevityLabels[k]));$('longevity-checks').append(label)}const n=longevityCounts(longevityLog);$('longevity-tally').textContent=n.completed+' of '+n.total+' habit checks · '+n.days+' complete days · not a health score';$('longevity-bar').style.width=(100*n.completed/n.total)+'%'}
+$('longevity-region').addEventListener('change',renderLongevityRegion);$('longevity-skin').addEventListener('change',renderLongevityRoutine);
+$('longevity-export').addEventListener('click',()=>clinicalExport('healthos-habit-journal.json',JSON.stringify(checkLongevityLog(longevityLog),null,2),'application/json'));
+$('longevity-import').addEventListener('change',async()=>{const seq=++longevityImportSeq,file=$('longevity-import').files[0];if(!file)return;try{if(file.size>12000)throw Error('size');const next=checkLongevityLog(JSON.parse(await file.text()));if(seq!==longevityImportSeq)return;longevityLog=next;longevityDay=0;renderLongevity();$('longevity-status').textContent='Journal imported locally.'}catch{if(seq===longevityImportSeq)$('longevity-status').textContent='Invalid journal; current entries unchanged.'}finally{if(seq===longevityImportSeq)$('longevity-import').value=''}});
+$('longevity-reset').addEventListener('click',()=>{longevityImportSeq++;$('longevity-import').value='';longevityLog=newLongevityLog();longevityDay=0;renderLongevity();$('longevity-status').textContent='Session journal cleared. Previously downloaded files are not deleted.'});
+renderLongevityRegion();renderLongevityRoutine();renderLongevity();
+
+// Face geometry is ephemeral capture guidance only, not a biometric or age measure.
+const landmarkRegions=Object.freeze({forehead:[10,67,109,151,297,338],eyes:[33,133,159,145,362,263,386,374],cheeks:[50,101,118,123,280,330,347,352],mouth:[61,291,0,17,78,308],jaw:[152,148,176,149,377,400,378]});
+function landmarkFrame(result){
+ const faces=result?.faceLandmarks;
+ if(!Array.isArray(faces)||faces.length!==1)return {ok:false,message:faces?.length>1?'Only one consenting face should be visible.':'No face detected. Center your face in even light.'};
+ const p=faces[0];if(!Array.isArray(p)||p.length<468||p.length>478||p.some(q=>!q||!Number.isFinite(q.x)||!Number.isFinite(q.y)))return {ok:false,message:'Landmark result unavailable.'};
+ const border=[10,152,234,454].map(i=>p[i]);
+ const x0=Math.min(...border.map(q=>q.x)),x1=Math.max(...border.map(q=>q.x)),y0=Math.min(...border.map(q=>q.y)),y1=Math.max(...border.map(q=>q.y));
+ const w=x1-x0,h=y1-y0;
+ if(x0<.04||x1>.96||y0<.04||y1>.96)return {ok:false,message:'Face is near the edge. Move slightly back and center.'};
+ if(w<.20||h<.28)return {ok:false,message:'Face is small in the frame. Move slightly closer.'};
+ const crops={};for(const [name,ids] of Object.entries(landmarkRegions)){const q=ids.map(i=>p[i]);const xs=q.map(v=>v.x),ys=q.map(v=>v.y);const a=Math.max(0,Math.min(...xs)-.035),b=Math.max(0,Math.min(...ys)-.035),c=Math.min(1,Math.max(...xs)+.035),d=Math.min(1,Math.max(...ys)+.035);if(c-a<=0||d-b<=0)return {ok:false,message:'Region framing unavailable.'};crops[name]={x:a,y:b,w:c-a,h:d-b};}
+ return {ok:true,box:{x:(x0+x1)/2,y:(y0+y1)/2,w,h},crops};
+}
+function compareCapture(a,b){
+ if(!a?.ok||!b?.ok)return {comparable:false,notice:a?.message||b?.message||'Two valid landmark samples required.'};
+ const q=a.box,r=b.box;if(!q||!r||![q.x,q.y,q.w,q.h,r.x,r.y,r.w,r.h].every(Number.isFinite))throw Error('Invalid framing');
+ const same=Math.abs(q.x-r.x)<=.06&&Math.abs(q.y-r.y)<=.06&&Math.abs(q.w-r.w)<=.10&&Math.abs(q.h-r.h)<=.10;
+ return {comparable:same,notice:same?'Framing was similar during this session. This is not evidence of skin improvement.':'Framing changed during the check. Repeat with a steady camera.'};
+}
+
+let landmarkModel=null,landmarkLoadSeq=0;
+function landmarkReset(){
+ landmarkLoadSeq++;if(landmarkModel){try{landmarkModel.close()}catch{}}
+ landmarkModel=null;$('landmark-load').disabled=false;$('landmark-scan').disabled=true;clear('landmark-feedback');
+ $('landmark-status').textContent='Optional model released. Enable it for a landmark-guided check.';
+}
+$('landmark-load').addEventListener('click',async()=>{
+ if(!window.isSecureContext||location.protocol==='file:'||!wellnessStream||!$('wellness-consent').checked){$('landmark-status').textContent='Start your consenting camera session first, on HTTPS or localhost.';return}
+ if(landmarkModel)return;
+ const seq=++landmarkLoadSeq;$('landmark-load').disabled=true;$('landmark-status').textContent='Loading reviewed same-origin runtime and model…';
+ let instance;
+ try{
+ const root=new URL('./face-runtime/',location.href);
+ const {FilesetResolver,FaceLandmarker}=await import(new URL('vision_bundle.mjs',root).href);
+ if(seq!==landmarkLoadSeq)return;
+ const files=await FilesetResolver.forVisionTasks(new URL('wasm/',root).href.replace(/\/$/,''));
+ if(seq!==landmarkLoadSeq)return;
+ instance=await FaceLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:new URL('face_landmarker.task',root).href,delegate:'CPU'},runningMode:'VIDEO',numFaces:2,outputFaceBlendshapes:false,outputFacialTransformationMatrixes:false});
+ if(seq!==landmarkLoadSeq||!wellnessStream||document.hidden||$('wellness').hidden||!$('wellness-consent').checked){instance.close();return}
+ landmarkModel=instance;$('landmark-scan').disabled=false;$('landmark-status').textContent='Model ready. Only framing and regional image quality will be checked.';
+ }catch{if(instance)try{instance.close()}catch{}if(seq===landmarkLoadSeq){$('landmark-load').disabled=false;$('landmark-status').textContent='Optional runtime unavailable. Use the regular camera check or habit plan.'}}
+});
+function landmarkSample(){
+ const v=$('wellness-video');if(!landmarkModel||v.readyState<2||!v.videoWidth||!v.videoHeight)throw Error('Camera not ready');
+ const g=landmarkFrame(landmarkModel.detectForVideo(v,performance.now()));
+ if(!g.ok)return g;
+ const quality={};const c=document.createElement('canvas');c.width=48;c.height=48;const ctx=c.getContext('2d',{willReadFrequently:true});if(!ctx)throw Error('No canvas');
+ try{for(const [name,r] of Object.entries(g.crops)){ctx.drawImage(v,r.x*v.videoWidth,r.y*v.videoHeight,r.w*v.videoWidth,r.h*v.videoHeight,0,0,48,48);const data=ctx.getImageData(0,0,48,48);try{quality[name]=frameQuality(data.data,48,48)}finally{data.data.fill(0);ctx.clearRect(0,0,48,48)}}}finally{c.width=0;c.height=0}
+ return {ok:true,box:g.box,quality};
+}
+$('landmark-scan').addEventListener('click',()=>{
+ if(!wellnessStream||!landmarkModel||!$('wellness-consent').checked)return;
+ const run=wellnessGeneration;let first;$('landmark-scan').disabled=true;$('wellness-scan').disabled=true;clear('wellness-feedback');clear('landmark-feedback');$('landmark-status').textContent='Keep one face centered and still. Checking two frames over eight seconds.';
+ wellnessTimers.push(setTimeout(()=>{if(run!==wellnessGeneration)return;try{first=landmarkSample();$('landmark-status').textContent=first.ok?'First frame ready. Keep camera steady.':first.message}catch{wellnessStop('Landmark check failed. Use the regular camera check.')}},4000));
+ wellnessTimers.push(setTimeout(()=>{if(run!==wellnessGeneration)return;try{const second=landmarkSample(),comparison=compareCapture(first,second),summary=[];
+ if(comparison.comparable)for(const k of Object.keys(landmarkRegions)){const q=captureFeedback([first.quality[k],second.quality[k]]);summary.push([k,q.ready?'Lighting/detail check passed':q.tips.join(' ')])}
+ wellnessStop('Guided landmark check finished. Camera stopped; no image saved.');
+ $('landmark-feedback').append(item('Capture consistency',comparison.notice,'Experimental framing only'));
+ for(const [name,msg] of summary)$('landmark-feedback').append(item(name,msg,'Image quality only · not skin condition'));
+ $('landmark-status').textContent='Model released. No coordinates or frames retained by the app.';
+ }catch{wellnessStop('Landmark check could not finish. Retake or use the habit plan.')}},8000));
+});

@@ -13,3 +13,5 @@ synthetic-dicom/
 monai-training-report.json
 clinical/fhir/generated/
 clinical/fhir/target/
+
+face-runtime-reviewed/
