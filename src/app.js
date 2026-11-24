@@ -5,7 +5,7 @@ function drawMap(){clear('map');const f=fixture(),NS='http://www.w3.org/2000/svg
 function runSwarm(){agentResults=compileEvidence(current,[...closed],true).agents;clear('agents');for(const a of agentResults){const e=elem('article',undefined,'agent');add(e,elem('span','SCRIPTED COMPLETE','tag done'),elem('h3',a.id+'. '+a.role),elem('p',a.output));$('agents').append(e)}$('swarm-status').textContent='12 scripted roles completed · 0 AI calls · not clinically validated.'}
 function renderVisit(){const q=prepareVisit(report());clear('visit-questions');if(!q.length){$('visit-questions').append(elem('p','All fictional actions are reported complete; this is not clinical clearance.'));return}for(const x of q)$('visit-questions').append(item(x.question,x.reviewer,'Source '+x.source))}
 function reset(){current=$('case').value;closed=new Set();agentResults=[];clear('agents');$('swarm-status').textContent='Ready for demonstration.';render()}
-$('case').addEventListener('change',reset);$('reset').addEventListener('click',reset);$('compile').addEventListener('click',()=>{render();runSwarm()});$('run-swarm').addEventListener('click',runSwarm);$('export').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(report(),null,2)],{type:'application/json'}));const a=elem('a');a.href=url;a.download='healthos-fictional-evidence.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});const headings={overview:'Your health story, connected.',timeline:'Health timeline',evidence:'Evidence intelligence',actions:'Close the documentation loop.',swarm:'Specialist evidence swarm',privacy:'Privacy by design',visit:'Prepare for a care visit',library:'Health evidence library',ecosystem:'MABRIG connected workspace',research:'Public research radar',imaging:'MONAI imaging research lab',studio:'Medical imaging studio',clinical:'Clinical research OS',council:'SwarmLab research council',compute:'Scientific computing laboratory',ai:'AI research providers'};for(const b of document.querySelectorAll('[data-view]'))b.addEventListener('click',()=>{for(const v of document.querySelectorAll('.view'))v.hidden=v.id!==b.dataset.view;for(const x of document.querySelectorAll('[data-view]')){x.classList.toggle('active',x===b);x.setAttribute('aria-current',x===b?'page':'false')}$('heading').textContent=headings[b.dataset.view]});
+$('case').addEventListener('change',reset);$('reset').addEventListener('click',reset);$('compile').addEventListener('click',()=>{render();runSwarm()});$('run-swarm').addEventListener('click',runSwarm);$('export').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(report(),null,2)],{type:'application/json'}));const a=elem('a');a.href=url;a.download='healthos-fictional-evidence.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});const headings={overview:'Your health story, connected.',timeline:'Health timeline',evidence:'Evidence intelligence',actions:'Close the documentation loop.',swarm:'Specialist evidence swarm',privacy:'Privacy by design',visit:'Prepare for a care visit',library:'Health evidence library',ecosystem:'MABRIG connected workspace',research:'Public research radar',imaging:'MONAI imaging research lab',studio:'Medical imaging studio',clinical:'Clinical research OS',council:'SwarmLab research council',compute:'Scientific computing laboratory',ai:'AI research providers',wellness:'Facial wellness & healthy aging'};for(const b of document.querySelectorAll('[data-view]'))b.addEventListener('click',()=>{for(const v of document.querySelectorAll('.view'))v.hidden=v.id!==b.dataset.view;for(const x of document.querySelectorAll('[data-view]')){x.classList.toggle('active',x===b);x.setAttribute('aria-current',x===b?'page':'false')}$('heading').textContent=headings[b.dataset.view]});
 
 let pendingHandoff=null;
 function clearHandoff(){pendingHandoff=null;$('handoff-preview').hidden=true;$('handoff-text').textContent='';$('handoff-status').textContent='';}
@@ -171,3 +171,80 @@ $('ai-run').addEventListener('click',async()=>{
  $('ai-draft').textContent=r.draft;$('ai-status').textContent='AI-generated draft · '+r.provider+' · '+r.model+' · '+r.remaining+' reserved calls remaining today · human review required';
  }catch(e){$('ai-status').textContent='Request failed or disabled. No automatic HealthOS retry or provider fallback.'}finally{$('ai-run').disabled=false}
 });
+
+// Local facial wellness: image quality only, educational guidance from chosen habits.
+const wellnessSources=Object.freeze({
+ skin:'https://www.aad.org/public/everyday-care/skin-care-secrets/anti-aging/reduce-premature-aging-skin',
+ diet:'https://www.who.int/news-room/fact-sheets/detail/healthy-diet',
+ activity:'https://www.who.int/initiatives/behealthy/physical-activity',
+ face:'https://pubmed.ncbi.nlm.nih.gov/41322034/'
+});
+function wellnessPlan(habits){
+ const keys=['sun','dryness','food','movement','sleep','smoking','faceExercise'];
+ if(!habits||Object.keys(habits).some(k=>!keys.includes(k))||keys.some(k=>typeof habits[k]!=='boolean'))throw Error('Invalid habit selection');
+ const out=[{title:'Daily sun protection',body:'Use broad-spectrum water-resistant SPF 30+ on exposed skin, plus shade and protective clothing. Reapply according to the label, especially outdoors.',source:wellnessSources.skin,level:'Dermatology guidance'}];
+ if(habits.sun)out.push({title:'Make outdoor protection routine',body:'Keep sunscreen near your morning essentials. Use a hat and seek shade; UV exposure can contribute to premature skin aging across skin tones.',source:wellnessSources.skin,level:'Dermatology guidance'});
+ if(habits.dryness)out.push({title:'Gentle skin care',body:'Use a gentle cleanser and moisturizer that suits your skin. Avoid harsh scrubs, bleaching products and products that sting. Moisturizer may soften the appearance of fine lines, not reverse aging.',source:wellnessSources.skin,level:'Dermatology guidance'});
+ if(habits.food)out.push({title:'Food variety for overall health',body:'Try beans or moi-moi, leafy vegetables such as ugu, oranges or pawpaw, whole grains, fish or other protein foods. Choose water over sugary drinks when appropriate. No particular food has been proved to reverse facial aging.',source:wellnessSources.diet,level:'General nutrition guidance'});
+ if(habits.movement)out.push({title:'Whole-body movement',body:'Start with comfortable walking and build gradually toward 150 minutes of moderate activity weekly if suitable for you. Adapt to mobility and medical limitations. This supports health, not guaranteed wrinkle reduction.',source:wellnessSources.activity,level:'General activity guidance'});
+ if(habits.sleep)out.push({title:'Rest and recovery',body:'Keep a regular sleep schedule and make time for relaxation. This is a general wellness habit, not a proven facial rejuvenation treatment.',source:wellnessSources.skin,level:'General wellness'});
+ if(habits.smoking)out.push({title:'Tobacco avoidance',body:'Avoid tobacco smoke; if you smoke, ask a qualified health professional for cessation support. Smoking contributes to premature skin aging.',source:wellnessSources.skin,level:'Dermatology guidance'});
+ if(habits.faceExercise)out.push({title:'Facial exercises: limited evidence',body:'Research is small and heterogeneous. Do not force repeated grimaces, use painful massage or expect a lifted jaw or erased wrinkles. Gentle relaxation is optional; stop if uncomfortable.',source:wellnessSources.face,level:'Uncertain evidence'});
+ return out;
+}
+function frameQuality(rgba,w,h){
+ if(!Number.isInteger(w)||!Number.isInteger(h)||w<8||h<8||w>256||h>256||!rgba||rgba.length!==4*w*h)throw Error('Invalid image buffer');
+ const lum=new Float64Array(w*h);let dark=0,bright=0,total=0,edge=0,count=0;
+ for(let i=0;i<lum.length;i++){const j=i*4,y=.2126*rgba[j]+.7152*rgba[j+1]+.0722*rgba[j+2];if(!Number.isFinite(y)||y<0||y>255)throw Error('Invalid pixel');lum[i]=y;total+=y;if(y<20)dark++;if(y>245)bright++;}
+ for(let y=1;y<h;y++)for(let x=1;x<w;x++){const i=y*w+x;edge+=Math.abs(lum[i]-lum[i-1])+Math.abs(lum[i]-lum[i-w]);count+=2;}
+ return {mean:total/lum.length,dark:dark/lum.length,bright:bright/lum.length,detail:edge/count};
+}
+function captureFeedback(frames){
+ if(!Array.isArray(frames)||frames.length!==2||frames.some(q=>!q||!['mean','dark','bright','detail'].every(k=>Number.isFinite(q[k]))))throw Error('Two image-quality samples required');
+ const tips=[];
+ if(frames.some(q=>q.mean<55||q.dark>.45))tips.push('Image is dark: face a soft, even light.');
+ if(frames.some(q=>q.mean>215||q.bright>.30))tips.push('Image is very bright: reduce direct glare.');
+ if(frames.some(q=>q.detail<2))tips.push('Low image detail: hold still and check camera focus.');
+ if(Math.abs(frames[0].mean-frames[1].mean)>25)tips.push('Lighting changed between samples: keep the light steady.');
+ return {ready:tips.length===0,tips,notice:'Experimental whole-frame image quality only; not face detection, skin texture, wrinkle severity, or biological age.'};
+}
+
+let wellnessStream=null,wellnessGeneration=0,wellnessTimers=[];
+const habitKeys=['sun','dryness','food','movement','sleep','smoking','faceExercise'];
+function wellnessStop(message='Camera off. No images retained.'){
+ wellnessGeneration++;for(const t of wellnessTimers)clearTimeout(t);wellnessTimers=[];
+ if(wellnessStream)for(const t of wellnessStream.getTracks())t.stop();
+ wellnessStream=null;$('wellness-video').srcObject=null;$('wellness-start').disabled=false;$('wellness-scan').disabled=true;
+ $('wellness-status').textContent=message;clear('wellness-feedback');
+}
+$('wellness-open').addEventListener('click',()=>document.querySelector('[data-view="wellness"]').click());
+for(const b of document.querySelectorAll('[data-view]'))b.addEventListener('click',()=>{if(b.dataset.view!=='wellness')wellnessStop()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)wellnessStop()});window.addEventListener('pagehide',()=>wellnessStop());
+$('wellness-consent').addEventListener('change',()=>{if(!$('wellness-consent').checked)wellnessStop()});
+$('wellness-start').addEventListener('click',async()=>{
+ wellnessStop();if(!$('wellness-consent').checked){$('wellness-status').textContent='Confirm camera consent first, or skip to the plan.';return}
+ if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia){$('wellness-status').textContent='Camera unavailable. Use HTTPS or localhost, or skip to the plan.';return}
+ const run=wellnessGeneration;$('wellness-start').disabled=true;$('wellness-status').textContent='Requesting camera permission…';
+ try{const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
+ if(run!==wellnessGeneration||document.hidden||$('wellness').hidden||!$('wellness-consent').checked){stream.getTracks().forEach(t=>t.stop());return}
+ wellnessStream=stream;$('wellness-video').srcObject=stream;await $('wellness-video').play();
+ if(run!==wellnessGeneration)return;
+ $('wellness-scan').disabled=false;$('wellness-status').textContent='Camera on. Center your face and begin the guided check.';
+ }catch{if(run===wellnessGeneration)wellnessStop('Camera permission denied or unavailable. The habit plan still works.')}
+});
+$('wellness-stop').addEventListener('click',()=>wellnessStop());
+function wellnessSample(){
+ const v=$('wellness-video');if(v.readyState<2||!v.videoWidth||!v.videoHeight)throw Error('Camera not ready');
+ const c=document.createElement('canvas');c.width=96;c.height=96;
+ const ctx=c.getContext('2d',{willReadFrequently:true});if(!ctx)throw Error('No canvas');
+ try{ctx.drawImage(v,0,0,96,96);const pixels=ctx.getImageData(0,0,96,96);try{return frameQuality(pixels.data,96,96)}finally{pixels.data.fill(0)}}finally{ctx.clearRect(0,0,96,96);c.width=0;c.height=0}
+}
+$('wellness-scan').addEventListener('click',()=>{
+ if(!wellnessStream||!$('wellness-consent').checked)return;
+ const run=wellnessGeneration;let first;
+ $('wellness-scan').disabled=true;clear('wellness-feedback');$('wellness-status').textContent='Keep still in even light. First check in 4 seconds.';
+ wellnessTimers.push(setTimeout(()=>{if(run!==wellnessGeneration)return;try{first=wellnessSample();$('wellness-status').textContent='First sample checked. Stay neutral for 4 more seconds.'}catch{wellnessStop('Could not sample camera. Retake or use the plan.')}},4000));
+ wellnessTimers.push(setTimeout(()=>{if(run!==wellnessGeneration)return;try{const result=captureFeedback([first,wellnessSample()]);wellnessStop('Guided check finished. Camera stopped; no image saved.');$('wellness-feedback').append(item(result.ready?'Image-quality check passed':'Capture could be improved',result.ready?'Lighting and image detail passed experimental checks. This does not assess skin health.':result.tips.join(' '),result.notice));}catch{wellnessStop('Camera check could not finish. Retake or use the plan.')}},8000));
+});
+$('wellness-plan').addEventListener('click',()=>{clear('wellness-plan-output');const plan=wellnessPlan(Object.fromEntries(habitKeys.map(k=>[k,$('habit-'+k).checked])));for(const p of plan){const c=elem('article',undefined,'agent'),a=elem('a','Read evidence ↗');a.href=p.source;a.target='_blank';a.rel='noopener noreferrer';add(c,elem('h3',p.title),elem('p',p.body),elem('span',p.level,'tag'),elem('p'));c.lastChild.append(a);$('wellness-plan-output').append(c)}});
+$('wellness-clear').addEventListener('click',()=>{wellnessStop();$('wellness-consent').checked=false;for(const k of habitKeys)$('habit-'+k).checked=false;clear('wellness-plan-output')});

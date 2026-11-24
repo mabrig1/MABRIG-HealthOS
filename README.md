@@ -39,3 +39,6 @@ See [activation guide](docs/WORKERS-AI.md). Disabled by default; fixed-topic, ow
 
 ## FreeLLMAPI owner pilot
 Optional private router provider with shared durable quota and fixed topics. Disabled by default. [Setup](docs/FREELLMAPI.md). No live runtime or cost guarantee.
+
+## Facial wellness studio (v0.12)
+On-device guided camera quality check and evidence-linked habits, no age estimation or image storage. [Documentation](docs/FACIAL-WELLNESS.md).
