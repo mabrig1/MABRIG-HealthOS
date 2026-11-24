@@ -29,3 +29,7 @@
 [submodule "vendor/HAPIFHIR"]
 	path = vendor/HAPIFHIR
 	url = https://github.com/hapifhir/hapi-fhir.git
+
+[submodule "vendor/FreeLLMAPI"]
+	path = vendor/FreeLLMAPI
+	url = https://github.com/tashfeenahmed/freellmapi.git

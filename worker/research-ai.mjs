@@ -1,3 +1,4 @@
+import {freeConfigured,freeDraft} from './freellmapi.mjs';
 // Owner-only research drafting. Fixed topics, no patient input or paid fallback.
 export const MODEL='@cf/meta/llama-3.1-8b-instruct-fp8';
 export const DAILY_LIMIT=5;
@@ -20,13 +21,16 @@ export class HealthAIQuota{
   return json(result.ok?200:429,result);
  }
 }
-export function aiConfigured(env){return env.HEALTH_AI_ENABLED==='true'&&env.CF_AI_FREE_PLAN_CONFIRMED==='true'&&typeof env.HEALTH_AI_OWNER_TOKEN==='string'&&env.HEALTH_AI_OWNER_TOKEN.length>=32&&env.HEALTH_AI_OWNER_TOKEN.length<=200&&!!env.AI&&!!env.HEALTH_AI_QUOTA}
-export async function researchAI(request,env){
+const ownerConfigured=env=>typeof env.HEALTH_AI_OWNER_TOKEN==='string'&&env.HEALTH_AI_OWNER_TOKEN.length>=32&&env.HEALTH_AI_OWNER_TOKEN.length<=200&&!!env.HEALTH_AI_QUOTA;
+export function aiConfigured(env){return ownerConfigured(env)&&env.HEALTH_AI_ENABLED==='true'&&env.CF_AI_FREE_PLAN_CONFIRMED==='true'&&!!env.AI}
+export function freeAIConfigured(env){return ownerConfigured(env)&&freeConfigured(env)}
+export async function researchAI(request,env,fetcher=globalThis.fetch){
  const u=new URL(request.url);
  if(request.method!=='POST'||request.body)return json(405,{error:'POST without body required'});
  if(request.headers.get('Origin')!==u.origin||request.headers.get('Sec-Fetch-Site')==='cross-site')return json(403,{error:'Same-origin request required'});
- if([...u.searchParams.keys()].length!==1||!u.searchParams.has('mission')||!Object.hasOwn(topics,u.searchParams.get('mission'))||request.headers.get('X-HealthOS-Consent')!=='true')return json(400,{error:'Fixed mission and explicit consent required'});
- if(!aiConfigured(env))return json(503,{error:'Research AI disabled or not configured'});
+ const provider=u.searchParams.get('provider')??'workers-ai';
+ if(!['workers-ai','freellmapi'].includes(provider)||u.searchParams.getAll('mission').length!==1||u.searchParams.getAll('provider').length>1||[...u.searchParams.keys()].some(k=>!['mission','provider'].includes(k))||!u.searchParams.has('mission')||!Object.hasOwn(topics,u.searchParams.get('mission'))||request.headers.get('X-HealthOS-Consent')!=='true')return json(400,{error:'Fixed mission and explicit consent required'});
+ if(!(provider==='freellmapi'?freeAIConfigured(env):aiConfigured(env)))return json(503,{error:'Research AI disabled or not configured'});
  if(!await authorized(request,env.HEALTH_AI_OWNER_TOKEN))return json(401,{error:'Unauthorized'});
  const mission=u.searchParams.get('mission');
  try{
@@ -35,8 +39,11 @@ export async function researchAI(request,env){
   if(reserve.status===429)return json(429,{error:'Daily research call limit reached'});
   if(!reserve.ok)return json(503,{error:'Quota unavailable'});
   const q=await reserve.json();if(q.ok!==true||!Number.isInteger(q.remaining)||q.remaining<0||q.remaining>=DAILY_LIMIT)return json(503,{error:'Quota unavailable'});
-  const result=await env.AI.run(MODEL,{messages:[{role:'system',content:'You draft research-method checklists only. No patient data, diagnosis, triage, treatments, medical advice, invented citations, or claims of executed research. State limitations. Output plain text.'},{role:'user',content:topics[mission]}],max_tokens:300,temperature:0.2,stream:false});
-  if(typeof result?.response!=='string'||!result.response.trim())return json(502,{error:'Model response unavailable; reserved call not refunded'});
-  return json(200,{schema:'healthos-ai-draft-v1',mission,provider:'workers-ai',model:MODEL,draft:result.response.slice(0,3000),remaining:q.remaining,clinicalValidation:false,notice:'AI-generated research-method draft only; independently review. No experiments or literature verification performed.'});
+  const messages=[{role:'system',content:'You draft research-method checklists only. No patient data, diagnosis, triage, treatments, medical advice, invented citations, or claims of executed research. State limitations. Output plain text.'},{role:'user',content:topics[mission]}];
+  let draft,model;
+  if(provider==='freellmapi'){({draft,model}=await freeDraft(env,messages,fetcher))}
+  else{const result=await env.AI.run(MODEL,{messages,max_tokens:300,temperature:0.2,stream:false});draft=result?.response;model=MODEL;}
+  if(typeof draft!=='string'||!draft.trim())return json(502,{error:'Model response unavailable; reserved call not refunded'});
+  return json(200,{schema:'healthos-ai-draft-v1',mission,provider,model,draft:draft.slice(0,3000),remaining:q.remaining,clinicalValidation:false,notice:'AI-generated research-method draft only; independently review. No experiments or literature verification performed.'});
  }catch{return json(503,{error:'Research AI unavailable; no fallback or automatic retry'})}
 }

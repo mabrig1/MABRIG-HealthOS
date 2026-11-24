@@ -1,4 +1,4 @@
-# MABRIG HealthOS v0.10
+# MABRIG HealthOS v0.11
 Independent fictional health-evidence research application by MABRIG Technologies.
 
 ## Run
@@ -36,3 +36,6 @@ Actual local synthetic MONAI training and holdout benchmark, arithmetic-checked 
 
 ## Workers AI owner research pilot
 See [activation guide](docs/WORKERS-AI.md). Disabled by default; fixed-topic, owner-authorized, quota-bounded drafts. No medical use or automatic paid fallback.
+
+## FreeLLMAPI owner pilot
+Optional private router provider with shared durable quota and fixed topics. Disabled by default. [Setup](docs/FREELLMAPI.md). No live runtime or cost guarantee.

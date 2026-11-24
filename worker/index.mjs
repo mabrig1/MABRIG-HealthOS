@@ -1,4 +1,4 @@
-import {researchAI,aiConfigured} from './research-ai.mjs';
+import {researchAI,aiConfigured,freeAIConfigured} from './research-ai.mjs';
 export {HealthAIQuota} from './research-ai.mjs';
 import {councilGateway} from './council.mjs';
 // Fixed-topic publication metadata gateway. No patient text, AI inference or medical advice.
@@ -33,9 +33,9 @@ export async function searchEvidence(topic,fetcher=globalThis.fetch){
 }
 export async function handle(request,env,fetcher=globalThis.fetch,cache=undefined){
  const u=new URL(request.url);
- if(u.pathname==='/api/research-ai')return researchAI(request,env);
+ if(u.pathname==='/api/research-ai')return researchAI(request,env,fetcher);
  if(u.pathname==='/api/council')return councilGateway(request,env);
- if(u.pathname==='/api/health')return request.method==='GET'?json(200,{service:'healthos',evidence:env.EVIDENCE_ENABLED==='true',council:env.SWARM_COUNCIL_ENABLED==='true'&&!!env.SWARMLAB&&typeof env.HEALTHOS_BRIDGE_TOKEN==='string'&&env.HEALTHOS_BRIDGE_TOKEN.length>=32,researchAI:aiConfigured(env),clinicalUse:false}):json(405,{error:'Method not allowed'});
+ if(u.pathname==='/api/health')return request.method==='GET'?json(200,{service:'healthos',evidence:env.EVIDENCE_ENABLED==='true',council:env.SWARM_COUNCIL_ENABLED==='true'&&!!env.SWARMLAB&&typeof env.HEALTHOS_BRIDGE_TOKEN==='string'&&env.HEALTHOS_BRIDGE_TOKEN.length>=32,researchAI:aiConfigured(env),freeLLMAPI:freeAIConfigured(env),clinicalUse:false}):json(405,{error:'Method not allowed'});
  if(u.pathname!=='/api/evidence'){
   if(u.pathname.startsWith('/api/'))return json(404,{error:'Not found'});
   return env.ASSETS.fetch(request);
