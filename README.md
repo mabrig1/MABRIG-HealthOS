@@ -1,4 +1,4 @@
-# MABRIG HealthOS v0.4
+# MABRIG HealthOS v0.5
 Independent fictional health-evidence research application by MABRIG Technologies.
 
 ## Run
@@ -18,3 +18,6 @@ Manual review/download/copy handoffs to SwarmLab, Scholar, NigerFlora, StatLab, 
 
 ## Public research radar (v0.4)
 Europe PMC metadata retrieval with four fixed topics, ten records per request, ten-second upstream timeout, bounded body size, and best-effort one-hour edge cache. No AI calls, free-text queries, patient data or clinical claims. The gateway is disabled by default: after deploying and reviewing usage limits, set EVIDENCE_ENABLED=true in the Worker configuration and deploy again (or configure the runtime variable consistently). Test /api/health and then use Research radar. Direct file and Python static server modes keep offline functions but do not provide the API. Source packets can be downloaded for manual Scholar/NigerFlora review. Cache is per edge location and is not a global rate limit; enable appropriate Cloudflare rate limits before public use. No production deployment, external live test, or account changes in this commit. See https://dev.europepmc.org/RestfulWebService.
+
+## MONAI imaging lab
+Pinned upstream source submodule and separate local CPU synthetic imaging runtime. See [setup and limitations](imaging/README.md). Browser imports a bounded synthetic report and independently checks mask overlap. No patient images, trained diagnostic model, hosted Python runtime or clinical validation.

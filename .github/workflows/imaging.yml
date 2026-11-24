@@ -1,0 +1,23 @@
+name: MONAI synthetic imaging (manual)
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  cpu-synthetic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -r imaging/requirements.txt
+      - run: python -m unittest imaging.test_synthetic_lab
+      - run: python -m imaging.synthetic_lab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-monai-report
+          path: monai-synthetic-report.json

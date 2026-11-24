@@ -3,3 +3,7 @@ node_modules/
 .env*
 .dev.vars*
 .wrangler/
+
+.venv/
+__pycache__/
+monai-synthetic-report.json

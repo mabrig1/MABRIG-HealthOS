@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import {readFile} from 'node:fs/promises';
+const src=await readFile(new URL('../src/app.js',import.meta.url),'utf8');const code=src.slice(src.indexOf('function validateImagingReport'),src.indexOf('function clearImaging'));const ctx=vm.createContext({});vm.runInContext(code,ctx);
+const mask=Array.from({length:4096},(_,i)=>((i%64-32)**2+(Math.floor(i/64)-32)**2<=256)?1:0),n=mask.reduce((a,b)=>a+b,0);
+const fixture=()=>({schema:'healthos-monai-synthetic-v1',synthetic_only:true,clinical_validation:false,monai_version:'1.6.2',upstream_commit:'a85d75e11cdd9c6d6d13500dc7f3960dd07dd7d3',seed:42,size:64,method:'threshold_baseline',dice:1,intersection:n,predicted_pixels:n,reference_pixels:n,untrained_unet_shape:[1,2,64,64],untrained_unet_finite:true,reference_mask:[...mask],predicted_mask:[...mask]});
+test('accept consistent synthetic fixture',()=>assert.equal(ctx.validateImagingReport(fixture()).dice,1));
+test('reject extra fields, inconsistent metric, false synthetic flag and altered reference',()=>{for(const patch of [{name:'patient'},{dice:.4},{synthetic_only:false},{reference_mask:Array(4096).fill(1)},{predicted_mask:[1]}])assert.throws(()=>ctx.validateImagingReport({...fixture(),...patch}));});
