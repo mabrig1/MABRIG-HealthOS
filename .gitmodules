@@ -33,3 +33,7 @@
 [submodule "vendor/FreeLLMAPI"]
 	path = vendor/FreeLLMAPI
 	url = https://github.com/tashfeenahmed/freellmapi.git
+
+[submodule "vendor/MediaPipe"]
+	path = vendor/MediaPipe
+	url = https://github.com/google-ai-edge/mediapipe.git
