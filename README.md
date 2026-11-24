@@ -48,3 +48,6 @@ Manual region explorer, AM/PM routine education, 30-day session habit journal wi
 
 ## Experimental face landmark adapter (v0.14)
 Optional same-origin reviewed MediaPipe assets, two-frame framing consistency and region image-quality feedback. Disabled by absent assets; no face scoring. [Setup](docs/FACE-LANDMARKER.md).
+
+## Private facial diary v0.15
+Single-owner encrypted R2 pilot with daily records, optional photos, side-by-side comparison and descriptive associations. Disabled by default. [Setup and limitations](docs/PRIVATE-DIARY.md).
