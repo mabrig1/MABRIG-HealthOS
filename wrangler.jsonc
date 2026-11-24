@@ -19,7 +19,8 @@
     "HEALTH_AI_ENABLED": "false",
     "CF_AI_FREE_PLAN_CONFIRMED": "false",
     "FREELLMAPI_ENABLED": "false",
-    "FREELLMAPI_FREE_PROFILE_CONFIRMED": "false"
+    "FREELLMAPI_FREE_PROFILE_CONFIRMED": "false",
+    "DIARY_ENABLED": "false"
   },
   "ai": {
     "binding": "AI"
@@ -38,6 +39,12 @@
       "new_sqlite_classes": [
         "HealthAIQuota"
       ]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "HEALTHOS_STORAGE",
+      "bucket_name": "healthos-storage"
     }
   ]
 }
