@@ -1,4 +1,4 @@
-# MABRIG HealthOS v0.2
+# MABRIG HealthOS v0.3
 Independent fictional health-evidence research application by MABRIG Technologies.
 
 ## Run
@@ -12,3 +12,6 @@ Review CI first. Create or connect a Worker to this repository; use npm run buil
 
 ## SwarmLab
 The current roles are deterministic simulations (zero live calls). A protected, synthetic-only healthcare gateway is a future integration. Never route actual patient data into the engineering gateway. Do not enable clinical use before independent clinical, security, privacy and regulatory review. This public repository must never contain real health records, credentials or private provider code.
+
+## Connected workspace
+Manual review/download/copy handoffs to SwarmLab, Scholar, NigerFlora, StatLab, AI University, BuildRx and AfrigrantPipeline. All briefs are generic and the StatLab CSV contains only built-in fictional documentation action rows (not patients). No automatic API requests, live inference, SSO or data synchronization. StatLab opens via the public project directory; destination availability and manual imports require separate smoke testing. Run npm test before deployment.
