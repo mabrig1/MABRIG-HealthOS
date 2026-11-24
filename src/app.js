@@ -212,7 +212,7 @@ function captureFeedback(frames){
 let wellnessStream=null,wellnessGeneration=0,wellnessTimers=[];
 const habitKeys=['sun','dryness','food','movement','sleep','smoking','faceExercise'];
 function wellnessStop(message='Camera off. No images retained.'){
- wellnessGeneration++;for(const t of wellnessTimers)clearTimeout(t);wellnessTimers=[];
+ wellnessGeneration++;landmarkReset();for(const t of wellnessTimers)clearTimeout(t);wellnessTimers=[];
  if(wellnessStream)for(const t of wellnessStream.getTracks())t.stop();
  wellnessStream=null;$('wellness-video').srcObject=null;$('wellness-start').disabled=false;$('wellness-scan').disabled=true;
  $('wellness-status').textContent=message;clear('wellness-feedback');
@@ -229,7 +229,7 @@ $('wellness-start').addEventListener('click',async()=>{
  if(run!==wellnessGeneration||document.hidden||$('wellness').hidden||!$('wellness-consent').checked){stream.getTracks().forEach(t=>t.stop());return}
  wellnessStream=stream;$('wellness-video').srcObject=stream;await $('wellness-video').play();
  if(run!==wellnessGeneration)return;
- $('wellness-scan').disabled=false;$('wellness-status').textContent='Camera on. Center your face and begin the guided check.';
+ $('wellness-scan').disabled=false;$('landmark-scan').disabled=!landmarkModel;$('wellness-status').textContent='Camera on. Center your face and begin the guided check.';
  }catch{if(run===wellnessGeneration)wellnessStop('Camera permission denied or unavailable. The habit plan still works.')}
 });
 $('wellness-stop').addEventListener('click',()=>wellnessStop());
@@ -242,7 +242,7 @@ function wellnessSample(){
 $('wellness-scan').addEventListener('click',()=>{
  if(!wellnessStream||!$('wellness-consent').checked)return;
  const run=wellnessGeneration;let first;
- $('wellness-scan').disabled=true;clear('wellness-feedback');$('wellness-status').textContent='Keep still in even light. First check in 4 seconds.';
+ $('wellness-scan').disabled=true;$('landmark-scan').disabled=true;clear('wellness-feedback');$('wellness-status').textContent='Keep still in even light. First check in 4 seconds.';
  wellnessTimers.push(setTimeout(()=>{if(run!==wellnessGeneration)return;try{first=wellnessSample();$('wellness-status').textContent='First sample checked. Stay neutral for 4 more seconds.'}catch{wellnessStop('Could not sample camera. Retake or use the plan.')}},4000));
  wellnessTimers.push(setTimeout(()=>{if(run!==wellnessGeneration)return;try{const result=captureFeedback([first,wellnessSample()]);wellnessStop('Guided check finished. Camera stopped; no image saved.');$('wellness-feedback').append(item(result.ready?'Image-quality check passed':'Capture could be improved',result.ready?'Lighting and image detail passed experimental checks. This does not assess skin health.':result.tips.join(' '),result.notice));}catch{wellnessStop('Camera check could not finish. Retake or use the plan.')}},8000));
 });
@@ -280,3 +280,67 @@ $('longevity-export').addEventListener('click',()=>clinicalExport('healthos-habi
 $('longevity-import').addEventListener('change',async()=>{const seq=++longevityImportSeq,file=$('longevity-import').files[0];if(!file)return;try{if(file.size>12000)throw Error('size');const next=checkLongevityLog(JSON.parse(await file.text()));if(seq!==longevityImportSeq)return;longevityLog=next;longevityDay=0;renderLongevity();$('longevity-status').textContent='Journal imported locally.'}catch{if(seq===longevityImportSeq)$('longevity-status').textContent='Invalid journal; current entries unchanged.'}finally{if(seq===longevityImportSeq)$('longevity-import').value=''}});
 $('longevity-reset').addEventListener('click',()=>{longevityImportSeq++;$('longevity-import').value='';longevityLog=newLongevityLog();longevityDay=0;renderLongevity();$('longevity-status').textContent='Session journal cleared. Previously downloaded files are not deleted.'});
 renderLongevityRegion();renderLongevityRoutine();renderLongevity();
+
+// Face geometry is ephemeral capture guidance only, not a biometric or age measure.
+const landmarkRegions=Object.freeze({forehead:[10,67,109,151,297,338],eyes:[33,133,159,145,362,263,386,374],cheeks:[50,101,118,123,280,330,347,352],mouth:[61,291,0,17,78,308],jaw:[152,148,176,149,377,400,378]});
+function landmarkFrame(result){
+ const faces=result?.faceLandmarks;
+ if(!Array.isArray(faces)||faces.length!==1)return {ok:false,message:faces?.length>1?'Only one consenting face should be visible.':'No face detected. Center your face in even light.'};
+ const p=faces[0];if(!Array.isArray(p)||p.length<468||p.length>478||p.some(q=>!q||!Number.isFinite(q.x)||!Number.isFinite(q.y)))return {ok:false,message:'Landmark result unavailable.'};
+ const border=[10,152,234,454].map(i=>p[i]);
+ const x0=Math.min(...border.map(q=>q.x)),x1=Math.max(...border.map(q=>q.x)),y0=Math.min(...border.map(q=>q.y)),y1=Math.max(...border.map(q=>q.y));
+ const w=x1-x0,h=y1-y0;
+ if(x0<.04||x1>.96||y0<.04||y1>.96)return {ok:false,message:'Face is near the edge. Move slightly back and center.'};
+ if(w<.20||h<.28)return {ok:false,message:'Face is small in the frame. Move slightly closer.'};
+ const crops={};for(const [name,ids] of Object.entries(landmarkRegions)){const q=ids.map(i=>p[i]);const xs=q.map(v=>v.x),ys=q.map(v=>v.y);const a=Math.max(0,Math.min(...xs)-.035),b=Math.max(0,Math.min(...ys)-.035),c=Math.min(1,Math.max(...xs)+.035),d=Math.min(1,Math.max(...ys)+.035);if(c-a<=0||d-b<=0)return {ok:false,message:'Region framing unavailable.'};crops[name]={x:a,y:b,w:c-a,h:d-b};}
+ return {ok:true,box:{x:(x0+x1)/2,y:(y0+y1)/2,w,h},crops};
+}
+function compareCapture(a,b){
+ if(!a?.ok||!b?.ok)return {comparable:false,notice:a?.message||b?.message||'Two valid landmark samples required.'};
+ const q=a.box,r=b.box;if(!q||!r||![q.x,q.y,q.w,q.h,r.x,r.y,r.w,r.h].every(Number.isFinite))throw Error('Invalid framing');
+ const same=Math.abs(q.x-r.x)<=.06&&Math.abs(q.y-r.y)<=.06&&Math.abs(q.w-r.w)<=.10&&Math.abs(q.h-r.h)<=.10;
+ return {comparable:same,notice:same?'Framing was similar during this session. This is not evidence of skin improvement.':'Framing changed during the check. Repeat with a steady camera.'};
+}
+
+let landmarkModel=null,landmarkLoadSeq=0;
+function landmarkReset(){
+ landmarkLoadSeq++;if(landmarkModel){try{landmarkModel.close()}catch{}}
+ landmarkModel=null;$('landmark-load').disabled=false;$('landmark-scan').disabled=true;clear('landmark-feedback');
+ $('landmark-status').textContent='Optional model released. Enable it for a landmark-guided check.';
+}
+$('landmark-load').addEventListener('click',async()=>{
+ if(!window.isSecureContext||location.protocol==='file:'||!wellnessStream||!$('wellness-consent').checked){$('landmark-status').textContent='Start your consenting camera session first, on HTTPS or localhost.';return}
+ if(landmarkModel)return;
+ const seq=++landmarkLoadSeq;$('landmark-load').disabled=true;$('landmark-status').textContent='Loading reviewed same-origin runtime and model…';
+ let instance;
+ try{
+ const root=new URL('./face-runtime/',location.href);
+ const {FilesetResolver,FaceLandmarker}=await import(new URL('vision_bundle.mjs',root).href);
+ if(seq!==landmarkLoadSeq)return;
+ const files=await FilesetResolver.forVisionTasks(new URL('wasm/',root).href.replace(/\/$/,''));
+ if(seq!==landmarkLoadSeq)return;
+ instance=await FaceLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:new URL('face_landmarker.task',root).href,delegate:'CPU'},runningMode:'VIDEO',numFaces:2,outputFaceBlendshapes:false,outputFacialTransformationMatrixes:false});
+ if(seq!==landmarkLoadSeq||!wellnessStream||document.hidden||$('wellness').hidden||!$('wellness-consent').checked){instance.close();return}
+ landmarkModel=instance;$('landmark-scan').disabled=false;$('landmark-status').textContent='Model ready. Only framing and regional image quality will be checked.';
+ }catch{if(instance)try{instance.close()}catch{}if(seq===landmarkLoadSeq){$('landmark-load').disabled=false;$('landmark-status').textContent='Optional runtime unavailable. Use the regular camera check or habit plan.'}}
+});
+function landmarkSample(){
+ const v=$('wellness-video');if(!landmarkModel||v.readyState<2||!v.videoWidth||!v.videoHeight)throw Error('Camera not ready');
+ const g=landmarkFrame(landmarkModel.detectForVideo(v,performance.now()));
+ if(!g.ok)return g;
+ const quality={};const c=document.createElement('canvas');c.width=48;c.height=48;const ctx=c.getContext('2d',{willReadFrequently:true});if(!ctx)throw Error('No canvas');
+ try{for(const [name,r] of Object.entries(g.crops)){ctx.drawImage(v,r.x*v.videoWidth,r.y*v.videoHeight,r.w*v.videoWidth,r.h*v.videoHeight,0,0,48,48);const data=ctx.getImageData(0,0,48,48);try{quality[name]=frameQuality(data.data,48,48)}finally{data.data.fill(0);ctx.clearRect(0,0,48,48)}}}finally{c.width=0;c.height=0}
+ return {ok:true,box:g.box,quality};
+}
+$('landmark-scan').addEventListener('click',()=>{
+ if(!wellnessStream||!landmarkModel||!$('wellness-consent').checked)return;
+ const run=wellnessGeneration;let first;$('landmark-scan').disabled=true;$('wellness-scan').disabled=true;clear('wellness-feedback');clear('landmark-feedback');$('landmark-status').textContent='Keep one face centered and still. Checking two frames over eight seconds.';
+ wellnessTimers.push(setTimeout(()=>{if(run!==wellnessGeneration)return;try{first=landmarkSample();$('landmark-status').textContent=first.ok?'First frame ready. Keep camera steady.':first.message}catch{wellnessStop('Landmark check failed. Use the regular camera check.')}},4000));
+ wellnessTimers.push(setTimeout(()=>{if(run!==wellnessGeneration)return;try{const second=landmarkSample(),comparison=compareCapture(first,second),summary=[];
+ if(comparison.comparable)for(const k of Object.keys(landmarkRegions)){const q=captureFeedback([first.quality[k],second.quality[k]]);summary.push([k,q.ready?'Lighting/detail check passed':q.tips.join(' ')])}
+ wellnessStop('Guided landmark check finished. Camera stopped; no image saved.');
+ $('landmark-feedback').append(item('Capture consistency',comparison.notice,'Experimental framing only'));
+ for(const [name,msg] of summary)$('landmark-feedback').append(item(name,msg,'Image quality only · not skin condition'));
+ $('landmark-status').textContent='Model released. No coordinates or frames retained by the app.';
+ }catch{wellnessStop('Landmark check could not finish. Retake or use the habit plan.')}},8000));
+});

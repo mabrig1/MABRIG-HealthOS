@@ -45,3 +45,6 @@ On-device guided camera quality check and evidence-linked habits, no age estimat
 
 ## Healthy-aging program v0.13
 Manual region explorer, AM/PM routine education, 30-day session habit journal with local export/import, and professional treatment safety education. [Details](docs/LONGEVITY-PROGRAM.md). No diagnosis or rejuvenation claims.
+
+## Experimental face landmark adapter (v0.14)
+Optional same-origin reviewed MediaPipe assets, two-frame framing consistency and region image-quality feedback. Disabled by absent assets; no face scoring. [Setup](docs/FACE-LANDMARKER.md).
