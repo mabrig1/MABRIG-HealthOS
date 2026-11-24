@@ -42,3 +42,6 @@ Optional private router provider with shared durable quota and fixed topics. Dis
 
 ## Facial wellness studio (v0.12)
 On-device guided camera quality check and evidence-linked habits, no age estimation or image storage. [Documentation](docs/FACIAL-WELLNESS.md).
+
+## Healthy-aging program v0.13
+Manual region explorer, AM/PM routine education, 30-day session habit journal with local export/import, and professional treatment safety education. [Details](docs/LONGEVITY-PROGRAM.md). No diagnosis or rejuvenation claims.

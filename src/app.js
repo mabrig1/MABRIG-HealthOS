@@ -248,3 +248,35 @@ $('wellness-scan').addEventListener('click',()=>{
 });
 $('wellness-plan').addEventListener('click',()=>{clear('wellness-plan-output');const plan=wellnessPlan(Object.fromEntries(habitKeys.map(k=>[k,$('habit-'+k).checked])));for(const p of plan){const c=elem('article',undefined,'agent'),a=elem('a','Read evidence ↗');a.href=p.source;a.target='_blank';a.rel='noopener noreferrer';add(c,elem('h3',p.title),elem('p',p.body),elem('span',p.level,'tag'),elem('p'));c.lastChild.append(a);$('wellness-plan-output').append(c)}});
 $('wellness-clear').addEventListener('click',()=>{wellnessStop();$('wellness-consent').checked=false;for(const k of habitKeys)$('habit-'+k).checked=false;clear('wellness-plan-output')});
+
+// Educational program: self-selected regions, not inferred from camera imagery.
+const longevityRegions=Object.freeze({
+ forehead:['Forehead','Expression lines and changes in surface texture can occur here. Protect exposed skin from UV and avoid harsh products. A dermatologist can explain options if lines bother you.'],
+ eyes:['Eye area','The eye area is delicate. Use comfortable sun protection and gentle skin care. Do not put irritating actives near the eyelids without professional guidance.'],
+ cheeks:['Cheeks','Uneven tone, dryness and changes in facial fullness have different causes. Use gentle care and sun protection; a clinician can assess persistent pigment concerns.'],
+ mouth:['Mouth and smile lines','Normal facial movement and changes in underlying support can affect folds. No exercise is proven to restore lost facial volume.'],
+ jaw:['Jawline and neck','Skin and deeper tissues change with age. Protect exposed neck skin, and seek professional advice about cosmetic options; exercises cannot reliably lift tissues.']
+});
+const longevityHabits=Object.freeze(['am','pm','plants','movement','rest']);
+const longevityLabels=Object.freeze({am:'Morning sun protection',pm:'Gentle evening skin care',plants:'Varied plant foods and protein',movement:'Movement or planned recovery',rest:'Consistent sleep and relaxation routine'});
+function longevityRoutine(kind){
+ if(!['normal','dry','oily'].includes(kind))throw Error('invalid skin preference');
+ const details={normal:'Choose a comfortable gentle cleanser and moisturizer.',dry:'Prefer fragrance-free gentle cleansing and a richer moisturizer; avoid irritating exfoliants.',oily:'Choose gentle cleansing and a light, non-comedogenic moisturizer; avoid harsh scrubbing.'};
+ return {am:[details[kind],'Finish with broad-spectrum, water-resistant SPF 30+; reapply as directed when outdoors.'],pm:['Remove sunscreen and makeup gently.',details[kind],'Ask a dermatologist about retinoids or other actives if interested. Avoid retinoids during pregnancy; discuss breastfeeding, sensitive skin and current treatments with a clinician.']};
+}
+function newLongevityLog(){return {schema:'healthos-habits-v1',days:Array.from({length:30},()=>Object.fromEntries(longevityHabits.map(k=>[k,false])))}}
+function checkLongevityLog(x){
+ if(!x||Object.keys(x).length!==2||x.schema!=='healthos-habits-v1'||!Array.isArray(x.days)||x.days.length!==30||x.days.some(d=>!d||Object.keys(d).length!==5||longevityHabits.some(k=>typeof d[k]!=='boolean')))throw Error('Invalid journal');
+ return {schema:x.schema,days:x.days.map(d=>Object.fromEntries(longevityHabits.map(k=>[k,d[k]])))};
+}
+function longevityCounts(x){const d=checkLongevityLog(x).days;return {completed:d.reduce((n,r)=>n+longevityHabits.filter(k=>r[k]).length,0),total:150,days:d.filter(r=>longevityHabits.every(k=>r[k])).length}}
+
+let longevityLog=newLongevityLog(),longevityDay=0,longevityImportSeq=0;
+function renderLongevityRegion(){const r=longevityRegions[$('longevity-region').value];if(!r)return;clear('longevity-region-info');$('longevity-region-info').append(item(r[0],r[1],'Education only · self-selected area'))}
+function renderLongevityRoutine(){clear('longevity-routine');const r=longevityRoutine($('longevity-skin').value);for(const [title,lines] of [['Morning',r.am],['Evening',r.pm]]){const a=elem('article',undefined,'agent');a.append(elem('h3',title));const ol=elem('ol');for(const l of lines)ol.append(elem('li',l));a.append(ol);$('longevity-routine').append(a)}}
+function renderLongevity(){clear('longevity-day-grid');for(let i=0;i<30;i++){const b=elem('button',String(i+1),i===longevityDay?'primary':'');b.setAttribute('aria-pressed',i===longevityDay?'true':'false');if(longevityHabits.every(k=>longevityLog.days[i][k]))b.classList.add('habit-complete');b.setAttribute('aria-label','Day '+(i+1));b.addEventListener('click',()=>{longevityDay=i;renderLongevity()});$('longevity-day-grid').append(b)}$('longevity-day-title').textContent='Day '+(longevityDay+1);clear('longevity-checks');for(const k of longevityHabits){const label=elem('label',undefined,'wellness-check'),c=elem('input');c.type='checkbox';c.checked=longevityLog.days[longevityDay][k];c.addEventListener('change',()=>{longevityLog.days[longevityDay][k]=c.checked;const n=longevityCounts(longevityLog);$('longevity-tally').textContent=n.completed+' of '+n.total+' habit checks · '+n.days+' complete days · not a health score';$('longevity-bar').style.width=(100*n.completed/n.total)+'%';$('longevity-day-grid').children[longevityDay].classList.toggle('habit-complete',longevityHabits.every(k=>longevityLog.days[longevityDay][k]))});label.append(c,document.createTextNode(longevityLabels[k]));$('longevity-checks').append(label)}const n=longevityCounts(longevityLog);$('longevity-tally').textContent=n.completed+' of '+n.total+' habit checks · '+n.days+' complete days · not a health score';$('longevity-bar').style.width=(100*n.completed/n.total)+'%'}
+$('longevity-region').addEventListener('change',renderLongevityRegion);$('longevity-skin').addEventListener('change',renderLongevityRoutine);
+$('longevity-export').addEventListener('click',()=>clinicalExport('healthos-habit-journal.json',JSON.stringify(checkLongevityLog(longevityLog),null,2),'application/json'));
+$('longevity-import').addEventListener('change',async()=>{const seq=++longevityImportSeq,file=$('longevity-import').files[0];if(!file)return;try{if(file.size>12000)throw Error('size');const next=checkLongevityLog(JSON.parse(await file.text()));if(seq!==longevityImportSeq)return;longevityLog=next;longevityDay=0;renderLongevity();$('longevity-status').textContent='Journal imported locally.'}catch{if(seq===longevityImportSeq)$('longevity-status').textContent='Invalid journal; current entries unchanged.'}finally{if(seq===longevityImportSeq)$('longevity-import').value=''}});
+$('longevity-reset').addEventListener('click',()=>{longevityImportSeq++;$('longevity-import').value='';longevityLog=newLongevityLog();longevityDay=0;renderLongevity();$('longevity-status').textContent='Session journal cleared. Previously downloaded files are not deleted.'});
+renderLongevityRegion();renderLongevityRoutine();renderLongevity();
