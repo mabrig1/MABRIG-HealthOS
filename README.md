@@ -1,6 +1,14 @@
-# MABRIG HealthOS v0.1
-Standalone offline research prototype. Open index.html directly in a browser. No installation or API credentials needed. All records are fictional. The 12-role swarm is scripted, not live AI. No real health records, diagnosis, clinical triage, predictions, treatment, account system, persistence or external communication. Export creates a local JSON report. Refresh resets session state. 
+# MABRIG HealthOS v0.2
+Independent fictional health-evidence research application by MABRIG Technologies.
 
-## Roadmap
-Independent HealthOS repository established (currently public); authenticated health-specific gateway with synthetic test fixtures; evidence retrieval and source verification; consent and retention controls; clinical and privacy review before real patient data. Do not send real health information into the existing SwarmLab engineering gateway. No deployment is configured.
-\n\nFor proprietary development, consider making this repository private. Never commit real health records or secrets.\n
+## Run
+Open index.html directly for the offline version, or install Node 22+ and run npm test then npm start (requires Python 3 for local serving). The build has no npm dependencies. Source is in src/; npm run build creates dist/index.html. After editing source, copy dist/index.html to root index.html and run npm test.
+
+## Features
+Three fictional cases, provenance ledger, evidence graph, care action tracker, visit preparation questions, reference directory, twelve scripted specialist roles and JSON export. No real patient data input, storage, network inference, diagnosis, triage or clinical validation. External reference links require an explicit click.
+
+## Cloudflare
+Review CI first. Create or connect a Worker to this repository; use npm run build and npx wrangler deploy. Wrangler serves only dist/ static assets. No database, secrets or paid model services required. Attach a custom domain only after reviewing the published prototype. No deployment is performed by CI.
+
+## SwarmLab
+The current roles are deterministic simulations (zero live calls). A protected, synthetic-only healthcare gateway is a future integration. Never route actual patient data into the engineering gateway. Do not enable clinical use before independent clinical, security, privacy and regulatory review. This public repository must never contain real health records, credentials or private provider code.

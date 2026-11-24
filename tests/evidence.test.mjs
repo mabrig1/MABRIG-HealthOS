@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+const ctx=vm.createContext({});
+vm.runInContext(await readFile(new URL('../src/evidence.js',import.meta.url),'utf8'),ctx);
+const run=(id,done=[],agents=false)=>ctx.compileEvidence(id,done,agents);
+test('all three fictional cases preserve source links and twelve scripted roles',()=>{for(const id of ['followup','access','conflict']){const r=run(id,[],true);assert.equal(r.modelCalls,0);assert.equal(r.clinicalValidation,false);assert.equal(r.agents.length,12);assert.ok(r.records.every((x,i)=>i===0||r.records[i-1].day<=x.day));assert.ok(r.actions.every(a=>a.status==='open'&&r.records.some(x=>x.id===a.record)));}});
+test('unknown identifiers and arbitrary patient text fail closed',()=>{for(const id of [null,{},'__proto__','constructor','patient text'])assert.throws(()=>run(id));assert.throws(()=>run('followup',['unknown']));assert.throws(()=>run('followup','A1'));});
+test('reported completion is not verification; visit questions reflect unresolved tasks',()=>{const r=run('followup',['A1','A1'],true);assert.equal(r.actions.filter(a=>a.status==='reported_complete').length,1);const q=ctx.prepareVisit(r);assert.equal(q.length,2);assert.ok(q.every(x=>x.actionId!=='A1'));assert.equal(run('followup').actions[0].status,'open');});
+test('conflicting evidence is retained without choosing a winner',()=>{const r=run('conflict');assert.equal(r.records.filter(x=>x.type==='Appointment').length,2);assert.match(r.finding,/neither source is automatically correct/);});
+test('generated offline app matches committed entry point and parses',async()=>{const dist=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');assert.equal(dist,await readFile(new URL('../index.html',import.meta.url),'utf8'));const script=dist.match(/<script>\n([\s\S]*?)<\/script>/)[1];assert.doesNotThrow(()=>new vm.Script(script));assert.match(dist,/fictional data only/i);assert.doesNotMatch(script,/\b(fetch|XMLHttpRequest|localStorage|indexedDB)\s*\(/);});

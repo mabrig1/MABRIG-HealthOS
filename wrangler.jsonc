@@ -1,0 +1,11 @@
+{
+  "name": "mabrig-healthos",
+  "compatibility_date": "2026-11-24",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  },
+  "build": {
+    "command": "npm run build"
+  }
+}
