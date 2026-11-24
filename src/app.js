@@ -5,7 +5,7 @@ function drawMap(){clear('map');const f=fixture(),NS='http://www.w3.org/2000/svg
 function runSwarm(){agentResults=compileEvidence(current,[...closed],true).agents;clear('agents');for(const a of agentResults){const e=elem('article',undefined,'agent');add(e,elem('span','SCRIPTED COMPLETE','tag done'),elem('h3',a.id+'. '+a.role),elem('p',a.output));$('agents').append(e)}$('swarm-status').textContent='12 scripted roles completed · 0 AI calls · not clinically validated.'}
 function renderVisit(){const q=prepareVisit(report());clear('visit-questions');if(!q.length){$('visit-questions').append(elem('p','All fictional actions are reported complete; this is not clinical clearance.'));return}for(const x of q)$('visit-questions').append(item(x.question,x.reviewer,'Source '+x.source))}
 function reset(){current=$('case').value;closed=new Set();agentResults=[];clear('agents');$('swarm-status').textContent='Ready for demonstration.';render()}
-$('case').addEventListener('change',reset);$('reset').addEventListener('click',reset);$('compile').addEventListener('click',()=>{render();runSwarm()});$('run-swarm').addEventListener('click',runSwarm);$('export').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(report(),null,2)],{type:'application/json'}));const a=elem('a');a.href=url;a.download='healthos-fictional-evidence.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});const headings={overview:'Your health story, connected.',timeline:'Health timeline',evidence:'Evidence intelligence',actions:'Close the documentation loop.',swarm:'Specialist evidence swarm',privacy:'Privacy by design',visit:'Prepare for a care visit',library:'Health evidence library',ecosystem:'MABRIG connected workspace'};for(const b of document.querySelectorAll('[data-view]'))b.addEventListener('click',()=>{for(const v of document.querySelectorAll('.view'))v.hidden=v.id!==b.dataset.view;for(const x of document.querySelectorAll('[data-view]')){x.classList.toggle('active',x===b);x.setAttribute('aria-current',x===b?'page':'false')}$('heading').textContent=headings[b.dataset.view]});
+$('case').addEventListener('change',reset);$('reset').addEventListener('click',reset);$('compile').addEventListener('click',()=>{render();runSwarm()});$('run-swarm').addEventListener('click',runSwarm);$('export').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(report(),null,2)],{type:'application/json'}));const a=elem('a');a.href=url;a.download='healthos-fictional-evidence.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});const headings={overview:'Your health story, connected.',timeline:'Health timeline',evidence:'Evidence intelligence',actions:'Close the documentation loop.',swarm:'Specialist evidence swarm',privacy:'Privacy by design',visit:'Prepare for a care visit',library:'Health evidence library',ecosystem:'MABRIG connected workspace',research:'Public research radar'};for(const b of document.querySelectorAll('[data-view]'))b.addEventListener('click',()=>{for(const v of document.querySelectorAll('.view'))v.hidden=v.id!==b.dataset.view;for(const x of document.querySelectorAll('[data-view]')){x.classList.toggle('active',x===b);x.setAttribute('aria-current',x===b?'page':'false')}$('heading').textContent=headings[b.dataset.view]});
 
 let pendingHandoff=null;
 function clearHandoff(){pendingHandoff=null;$('handoff-preview').hidden=true;$('handoff-text').textContent='';$('handoff-status').textContent='';}
@@ -16,3 +16,24 @@ function setupEcosystem(){
 }
 setupEcosystem();
 render();
+
+let sourcePacket=null;
+function clearResearch(){sourcePacket=null;$('research-export').disabled=true;clear('research-results');$('research-status').textContent='No retrieval performed for this topic.'}
+$('research-topic').addEventListener('change',clearResearch);
+$('research-run').addEventListener('click',async()=>{
+ clearResearch();
+ if(location.protocol==='file:'){$('research-status').textContent='Offline file: research gateway unavailable. Use the hosted HealthOS Worker or public research links.';return;}
+ const topic=$('research-topic').value;const allowed=['care','documentation','plants','access'];if(!allowed.includes(topic))return;
+ $('research-run').disabled=true;$('research-topic').disabled=true;$('research-status').textContent='Requesting publication metadata…';
+ try{
+ const response=await globalThis.fetch('/api/evidence?topic='+encodeURIComponent(topic),{credentials:'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(15000)});
+ if(!response.ok)throw Error('unavailable');
+ const packet=await response.json();if(packet.schema!=='healthos-public-evidence-v1'||packet.topic!==topic||!Array.isArray(packet.items)||packet.items.length>10)throw Error('invalid response');
+ for(const p of packet.items){if(!p||typeof p.title!=='string'||!/^https:\/\/europepmc\.org\/article\/[A-Z]{2,8}\/[a-zA-Z0-9._-]+$/.test(p.url))throw Error('invalid source');}
+ sourcePacket=packet;
+ for(const p of packet.items){const e=item(p.title,p.authors||'Authors not supplied',[p.journal,p.year,p.doi?'DOI: '+p.doi:'DOI not supplied'].filter(Boolean).join(' · '));const link=elem('a','View source ↗');link.href=p.url;link.target='_blank';link.rel='noopener noreferrer';e.append(link);$('research-results').append(e)}
+ $('research-status').textContent=packet.items.length+' publication records · Europe PMC · retrieved '+packet.retrievedAt+' · not clinically verified';$('research-export').disabled=false;
+ }catch{clearResearch();$('research-status').textContent='Research gateway unavailable or disabled. Use the evidence library links; no fabricated results shown.'}
+ finally{$('research-run').disabled=false;$('research-topic').disabled=false;}
+});
+$('research-export').addEventListener('click',()=>{if(!sourcePacket)return;const a=elem('a'),url=URL.createObjectURL(new Blob([JSON.stringify(sourcePacket,null,2)],{type:'application/json'}));a.href=url;a.download='healthos-public-source-packet.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
