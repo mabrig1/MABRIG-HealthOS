@@ -1,4 +1,4 @@
-# MABRIG HealthOS v0.8
+# MABRIG HealthOS v0.9
 Independent fictional health-evidence research application by MABRIG Technologies.
 
 ## Run
@@ -30,3 +30,6 @@ Synthetic cohorts, FHIR R4-style collection exports, StatLab CSV, internal refer
 
 ## Protected SwarmLab research council
 Optional server-to-server fixed-mission gateway. Eight deterministic planning roles, no inference or clinical results. See [operator setup](docs/SWARMLAB-COUNCIL.md). Disabled until both Workers are configured.
+
+## Scientific computing
+Actual local synthetic MONAI training and holdout benchmark, arithmetic-checked report import, and separate HAPI FHIR base validation harness. [Guide](clinical/COMPUTE.md). No production deployment or medical accuracy claims.

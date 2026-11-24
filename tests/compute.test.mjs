@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import {readFile} from 'node:fs/promises';
+const src=await readFile(new URL('../src/app.js',import.meta.url),'utf8'),ctx=vm.createContext({});vm.runInContext(src.slice(src.indexOf('function validateTraining('),src.indexOf('let computeSeq=')),ctx);
+function fixture(){const a={mean_dice:1,cases:Array.from({length:16},(_,i)=>({case:i+1,predicted:80,reference:80,intersection:80,dice:1}))};return {schema:'healthos-monai-training-v1',synthetic_only:true,clinical_validation:false,monai_version:'1.6.2',train_seed:42,holdout_seed:31415,train_count:48,holdout_count:16,epochs:12,losses:Array(12).fill(.5),model:structuredClone(a),threshold:structuredClone(a)}}
+test('consistent holdout report validates',()=>assert.equal(ctx.validateTraining(fixture()).model,1));
+test('altered metric, wrong seed and real data flag rejected',()=>{const r=fixture();r.model.cases[0].intersection=12;assert.throws(()=>ctx.validateTraining(r));assert.throws(()=>ctx.validateTraining({...fixture(),synthetic_only:false}));assert.throws(()=>ctx.validateTraining({...fixture(),holdout_seed:42}));});

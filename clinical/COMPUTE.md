@@ -1,0 +1,7 @@
+# Scientific computing lab v0.9
+## Actual synthetic MONAI training
+Use Python 3.12 in an isolated environment. Install CPU torch 2.8.0 with the PyTorch CPU index and imaging/requirements.txt. Run python -m imaging.train_synthetic. Training: 48 geometric images, seed 42, 12 epochs. Holdout: 16 images generated with separate seed 31415, never used to optimize. Compare Dice against a simple fixed threshold on the same holdout. No checkpoints or real images accepted. Import monai-training-report.json in Scientific computing. The browser checks arithmetic, not authenticated execution. Do not claim medical accuracy. Run python -m unittest imaging.test_training for a separate training regression.
+## HAPI FHIR validation
+Node >=22, Java 17+, Maven. From root run node scripts/export-fhir-fixtures.mjs then mvn -f clinical/fhir/pom.xml test. Uses HAPI 9.0.0 and default bundled R4 validation support; no remote terminology endpoint configured. Checks generated native fixtures, then a deliberately incomplete Observation. Warnings remain visible in logs. Base validation is not certification, national profile conformance or an EHR integration. CI may require package download access.
+## CI and limitations
+Dedicated push-path/manual workflows; no deployments, paid model calls, patient input or model weights. Results are not assumed until CI completes. Synthea and PyHealth runtime execution remains separate and pending. Cloudflare does not run Python or Maven.
