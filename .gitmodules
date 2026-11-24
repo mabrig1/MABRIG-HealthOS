@@ -5,3 +5,27 @@
 [submodule "vendor/OHIF"]
 	path = vendor/OHIF
 	url = https://github.com/OHIF/Viewers.git
+
+[submodule "vendor/PyHealth"]
+	path = vendor/PyHealth
+	url = https://github.com/sunlabuiuc/PyHealth.git
+
+[submodule "vendor/OpenMRS"]
+	path = vendor/OpenMRS
+	url = https://github.com/openmrs/openmrs-core.git
+
+[submodule "vendor/Synthea"]
+	path = vendor/Synthea
+	url = https://github.com/synthetichealth/synthea.git
+
+[submodule "vendor/MONAILabel"]
+	path = vendor/MONAILabel
+	url = https://github.com/Project-MONAI/MONAILabel.git
+
+[submodule "vendor/MONAIModelZoo"]
+	path = vendor/MONAIModelZoo
+	url = https://github.com/Project-MONAI/model-zoo.git
+
+[submodule "vendor/HAPIFHIR"]
+	path = vendor/HAPIFHIR
+	url = https://github.com/hapifhir/hapi-fhir.git

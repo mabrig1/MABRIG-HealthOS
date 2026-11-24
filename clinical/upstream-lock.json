@@ -1,0 +1,50 @@
+[
+  {
+    "name": "PyHealth",
+    "repo": "sunlabuiuc/PyHealth",
+    "version": "v2.1.0",
+    "commit": "e5394d5ca1aa39b4ba70ad81bc708343ba37b092",
+    "purpose": "Longitudinal health research",
+    "runtime": "Source pinned; not executed"
+  },
+  {
+    "name": "OpenMRS",
+    "repo": "openmrs/openmrs-core",
+    "version": "2.8.10",
+    "commit": "a7f6314dd430cbc393313dcfcdc6dd2edecea377",
+    "purpose": "Electronic records",
+    "runtime": "Source pinned; not executed"
+  },
+  {
+    "name": "Synthea",
+    "repo": "synthetichealth/synthea",
+    "version": "master snapshot",
+    "commit": "5441eef7de9867babcde1551640b78f3e0119594",
+    "purpose": "Synthetic datasets",
+    "runtime": "Source pinned; not executed"
+  },
+  {
+    "name": "MONAILabel",
+    "repo": "Project-MONAI/MONAILabel",
+    "version": "0.8.6",
+    "commit": "f824cd267f32429f518d1d0c7f699909b2dbe559",
+    "purpose": "Image annotation",
+    "runtime": "Source pinned; not executed"
+  },
+  {
+    "name": "MONAIModelZoo",
+    "repo": "Project-MONAI/model-zoo",
+    "version": "dev snapshot",
+    "commit": "c1f50fb80be8a6274fa7de956bb742faab1a833d",
+    "purpose": "Model bundle review",
+    "runtime": "Source pinned; not executed"
+  },
+  {
+    "name": "HAPIFHIR",
+    "repo": "hapifhir/hapi-fhir",
+    "version": "v9.0.0",
+    "commit": "28e4e97ccf2035af9be7c00612a01d82d366f18c",
+    "purpose": "Interoperability",
+    "runtime": "Source pinned; not executed"
+  }
+]

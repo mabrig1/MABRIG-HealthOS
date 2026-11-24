@@ -1,4 +1,4 @@
-# MABRIG HealthOS v0.6
+# MABRIG HealthOS v0.7
 Independent fictional health-evidence research application by MABRIG Technologies.
 
 ## Run
@@ -24,3 +24,6 @@ Pinned upstream source submodule and separate local CPU synthetic imaging runtim
 
 ## Imaging studio and OHIF
 Native offline geometric volume viewer with three planes, window controls, overlays and synthetic volume export. OHIF source pinned separately; local synthetic DICOM generation and optional local viewer build instructions in [imaging/OHIF.md](imaging/OHIF.md). No embedded OHIF or real patient scan support. No production or clinical deployment.
+
+## Clinical Research OS
+Synthetic cohorts, FHIR R4-style collection exports, StatLab CSV, internal reference checks and manual geometry marks. Six new source submodules; no upstream runtimes enabled. [Guide](clinical/README.md).
